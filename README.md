@@ -61,6 +61,18 @@ All demo accounts use the password `tabside-demo`.
 
 In development, the sign-in page has one-tap buttons for these accounts.
 
+## Testing on your phone
+
+```bash
+npm run dev:lan
+```
+
+This makes the app reachable from other devices on your Wi‑Fi, puts your computer's network address into every QR code, and prints a scannable code for The Globe's Table 3 in the terminal. Scan it with your phone's camera.
+
+- Use `VITE_SUPABASE_URL=/supabase` (the default in `.env.local`). The dev server then proxies Supabase, including realtime, so the phone only needs to reach one address.
+- Some networks (campus or office Wi‑Fi) block devices from reaching each other. In that case, open a temporary public URL with `npx cloudflared tunnel --url http://localhost:5173` and use the printed `https://….trycloudflare.com` address on your phone. For printed QR codes to use it, start with `VITE_PUBLIC_APP_URL=<that address> npm run dev:lan`.
+- Only run `dev:lan` while you're testing: it exposes the dev server to your network.
+
 ## The demo, step by step
 
 1. Open the landing page, http://localhost:5173/r/the-globe. It shows the rating, opening hours and featured reviews.

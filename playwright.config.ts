@@ -1,4 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
+import { loadEnv } from 'vite'
+
+// Playwright doesn't read env files; load .env + .env.local so tests can reach local Supabase.
+// Variables already set in the shell win.
+for (const [key, value] of Object.entries(loadEnv('development', process.cwd(), ''))) process.env[key] ??= value
 
 export default defineConfig({
   testDir: 'tests/e2e',

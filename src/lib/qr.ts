@@ -1,9 +1,19 @@
 import QRCode from 'qrcode'
 
-/** Public origin baked into printed QR codes (set VITE_PUBLIC_APP_URL in production). */
+/**
+ * Public origin baked into printed QR codes: VITE_PUBLIC_APP_URL in production. In development,
+ * if you're browsing over HTTPS (e.g. a cloudflared tunnel) while the configured address is plain
+ * http or localhost, use the address you're on — that's the one a phone can actually open.
+ */
 export function publicOrigin(): string {
-  const configured = import.meta.env.VITE_PUBLIC_APP_URL as string | undefined
-  return (configured || window.location.origin).replace(/\/$/, '')
+  const configured = (import.meta.env.VITE_PUBLIC_APP_URL as string | undefined)?.replace(/\/$/, '')
+  const current = window.location.origin
+  if (!configured) return current
+  const configuredIsLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(configured)
+  const currentIsLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(current)
+  if (configuredIsLocal && !currentIsLocal) return current
+  if (configured.startsWith('http://') && current.startsWith('https://')) return current
+  return configured
 }
 
 /** The QR identifies only restaurant + table — no secrets, no session ids. */

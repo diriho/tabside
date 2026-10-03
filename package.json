@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "node scripts/dev.mjs",
+    "dev:lan": "node scripts/dev.mjs --lan",
     "dev:web": "vite",
     "dev:api": "node --watch --env-file-if-exists=.env --env-file-if-exists=.env.local server/index.ts",
     "stripe:listen": "stripe listen --forward-to localhost:8787/api/stripe/webhook",

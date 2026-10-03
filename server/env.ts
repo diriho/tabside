@@ -6,6 +6,9 @@ const schema = z.object({
   SUPABASE_PUBLISHABLE_KEY: z.string().min(10),
   APP_URL: z.url().default('http://localhost:5173'),
   API_PORT: z.coerce.number().int().positive().default(8787),
+  // Loopback only: the browser reaches the API through the Vite proxy (or your reverse proxy in
+  // production), so it never needs to accept connections from the network directly.
+  API_HOST: z.string().default('127.0.0.1'),
   STRIPE_SECRET_KEY: z.string().optional().transform((v) => (v ? v : undefined)),
   STRIPE_WEBHOOK_SECRET: z.string().optional().transform((v) => (v ? v : undefined)),
 })

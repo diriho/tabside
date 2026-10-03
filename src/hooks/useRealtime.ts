@@ -1,5 +1,6 @@
 import { useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
+import { randomId } from '@/lib/id'
 import { supabase } from '@/lib/supabase'
 
 export type RealtimeTable =
@@ -44,7 +45,7 @@ export function useRealtimeInvalidate(
     }
 
     const subs = JSON.parse(subsKey) as RealtimeSubscription[]
-    let channel = supabase.channel(`${channelName}:${crypto.randomUUID().slice(0, 8)}`)
+    let channel = supabase.channel(`${channelName}:${randomId().slice(0, 8)}`)
     for (const sub of subs) {
       channel = channel.on(
         'postgres_changes',
