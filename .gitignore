@@ -1,0 +1,21 @@
+.claude
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Dependencies & build
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+
+# Supabase local
+supabase/.branches
+supabase/.temp
+
+# Test output
+test-results/
+playwright-report/

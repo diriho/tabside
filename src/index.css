@@ -1,0 +1,254 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TABSide tokens. Semantic colors are CSS variables so light/dark swap in one place.
+   Light: cream dining room by day. Dark: the same room after hours — espresso wood,
+   candle-warm text, clay that glows a little brighter.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+  --bg: #faf5ec;
+  --surface: #fffdf8;
+  --surface-2: #f3ebdd;
+  --paper: #fffefa;
+  --ink: #2a1e17;
+  --ink-2: #6b594a;
+  --ink-3: #998473;
+  --line: #e9ddcb;
+  --line-strong: #d6c4ab;
+  --clay: #b4532a;
+  --clay-strong: #9a4422;
+  --clay-soft: #f6e2d6;
+  --on-clay: #fff8f1;
+  --brass: #c49656;
+  --brass-ink: #855e2b;
+  --brass-soft: #f3e7d1;
+  --sage: #4f6b3c;
+  --sage-soft: #e2ead5;
+  --danger: #a3392b;
+  --danger-soft: #f6ddd7;
+  --focus: #b4532a;
+  --scrim: rgb(42 30 23 / 0.42);
+  --shadow-color: 42 30 23;
+  --chart-1: #b4532a;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1c1511;
+  --surface: #251c16;
+  --surface-2: #2f241d;
+  --paper: #2c221c;
+  --ink: #f3e9db;
+  --ink-2: #c2ae98;
+  --ink-3: #8f7c6b;
+  --line: #3a2d24;
+  --line-strong: #4d3c30;
+  --clay: #e2804f;
+  --clay-strong: #ee9a6f;
+  --clay-soft: #3f251a;
+  --on-clay: #1c1511;
+  --brass: #d9ae6f;
+  --brass-ink: #e2bd84;
+  --brass-soft: #3a2e1d;
+  --sage: #a3c088;
+  --sage-soft: #263222;
+  --danger: #f08a78;
+  --danger-soft: #42201a;
+  --focus: #ee9a6f;
+  --scrim: rgb(0 0 0 / 0.6);
+  --shadow-color: 0 0 0;
+  --chart-1: #d9744a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #1c1511;
+    --surface: #251c16;
+    --surface-2: #2f241d;
+    --paper: #2c221c;
+    --ink: #f3e9db;
+    --ink-2: #c2ae98;
+    --ink-3: #8f7c6b;
+    --line: #3a2d24;
+    --line-strong: #4d3c30;
+    --clay: #e2804f;
+    --clay-strong: #ee9a6f;
+    --clay-soft: #3f251a;
+    --on-clay: #1c1511;
+    --brass: #d9ae6f;
+    --brass-ink: #e2bd84;
+    --brass-soft: #3a2e1d;
+    --sage: #a3c088;
+    --sage-soft: #263222;
+    --danger: #f08a78;
+    --danger-soft: #42201a;
+    --focus: #ee9a6f;
+    --scrim: rgb(0 0 0 / 0.6);
+    --shadow-color: 0 0 0;
+    --chart-1: #d9744a;
+  }
+}
+
+@theme inline {
+  --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-clay: var(--clay);
+  --color-clay-strong: var(--clay-strong);
+  --color-clay-soft: var(--clay-soft);
+  --color-on-clay: var(--on-clay);
+  --color-brass: var(--brass);
+  --color-brass-ink: var(--brass-ink);
+  --color-brass-soft: var(--brass-soft);
+  --color-sage: var(--sage);
+  --color-sage-soft: var(--sage-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-scrim: var(--scrim);
+  --color-chart-1: var(--chart-1);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+
+  --shadow-soft: 0 1px 2px rgb(var(--shadow-color) / 0.05), 0 6px 18px -10px rgb(var(--shadow-color) / 0.22);
+  --shadow-lift: 0 2px 4px rgb(var(--shadow-color) / 0.06), 0 18px 40px -18px rgb(var(--shadow-color) / 0.35);
+  --shadow-sheet: 0 -12px 40px -12px rgb(var(--shadow-color) / 0.35);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --animate-sheet-in: sheet-in 320ms var(--ease-out-soft);
+  --animate-fade-in: fade-in 200ms ease-out;
+  --animate-pop: pop 260ms var(--ease-spring);
+  --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
+}
+
+@keyframes sheet-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--clay) 45%, transparent); }
+  70% { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    font-optical-sizing: auto;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100dvh;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  ::selection {
+    background: var(--clay-soft);
+    color: var(--ink);
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  img {
+    color: transparent;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Prices and anything columnar */
+  .tnum {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  /* Display type: Bricolage at its large optical size, tight but legible */
+  .display {
+    font-variation-settings: "opsz" 96;
+    letter-spacing: -0.025em;
+    line-height: 1.02;
+  }
+
+  /* Paper: guest checks and kitchen tickets — a slightly warmer, brighter stock than the app surface. */
+  .paper {
+    background-color: var(--paper);
+  }
+
+  /* Torn-receipt edge (perforation) along the top or bottom */
+  .perf-top {
+    --perf: 7px;
+    mask:
+      radial-gradient(circle at 50% 0, transparent calc(var(--perf) * 0.55), #000 calc(var(--perf) * 0.55 + 0.5px)) top / calc(var(--perf) * 2) var(--perf) repeat-x,
+      linear-gradient(#000, #000) 0 var(--perf) / 100% calc(100% - var(--perf)) no-repeat;
+  }
+  .perf-bottom {
+    --perf: 7px;
+    mask:
+      radial-gradient(circle at 50% 100%, transparent calc(var(--perf) * 0.55), #000 calc(var(--perf) * 0.55 + 0.5px)) bottom / calc(var(--perf) * 2) var(--perf) repeat-x,
+      linear-gradient(#000, #000) 0 0 / 100% calc(100% - var(--perf)) no-repeat;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+}
+
+/* Printing QR table tents: only the print area is visible, laid out two per page row. */
+@media print {
+  @page { margin: 12mm; }
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area {
+    position: absolute; inset: 0 auto auto 0; width: 100%;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8mm;
+  }
+  .print-card { break-inside: avoid; border-color: #999 !important; }
+}
