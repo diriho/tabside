@@ -1,6 +1,7 @@
 # Supabase
 .branches
 .temp
+supabase/migrations/*
 
 # dotenvx
 .env.keys

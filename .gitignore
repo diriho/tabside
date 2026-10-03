@@ -16,6 +16,9 @@ coverage/
 supabase/.branches
 supabase/.temp
 
+# Tests
+tests/
+
 # Test output
 test-results/
 playwright-report/
