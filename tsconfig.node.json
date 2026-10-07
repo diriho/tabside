@@ -17,5 +17,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["server", "shared", "tests/db", "tests/e2e", "vite.config.ts", "playwright.config.ts"]
+  "include": ["server", "shared", "tests/db", "tests/e2e", "tests/local-env.ts", "vite.config.ts", "playwright.config.ts"]
 }

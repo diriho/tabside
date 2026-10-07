@@ -20,3 +20,6 @@ supabase/.temp
 # Test output
 test-results/
 playwright-report/
+
+# Vercel build output & CLI link
+.vercel/

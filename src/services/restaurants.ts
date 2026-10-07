@@ -1,6 +1,6 @@
 import { unwrap, unwrapMaybe } from '@/lib/api'
 import { randomId } from '@/lib/id'
-import { supabase, supabaseIsSameOrigin } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import type { Restaurant, Review, TableEntry } from '@/types/domain'
 import type { TablesUpdate } from '@/types/database'
 
@@ -72,7 +72,5 @@ export async function uploadMedia(restaurantId: string, file: File, folder: stri
   const ext = file.name.split('.').pop()?.toLowerCase() ?? 'bin'
   const path = `${restaurantId}/${folder}/${randomId()}.${ext}`
   unwrap(await supabase.storage.from('restaurant-media').upload(path, file, { cacheControl: '31536000', upsert: false }))
-  const publicUrl = supabase.storage.from('restaurant-media').getPublicUrl(path).data.publicUrl
-  // Via the dev proxy, keep the URL relative so it loads from whichever address you browse on.
-  return supabaseIsSameOrigin ? publicUrl.replace(window.location.origin, '') : publicUrl
+  return supabase.storage.from('restaurant-media').getPublicUrl(path).data.publicUrl
 }

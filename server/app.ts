@@ -10,7 +10,20 @@ import { createAdminClient, createUserClient, requireUser } from './supabase.ts'
 const checkoutSchema = z.object({ sessionId: z.uuid() })
 const syncSchema = z.object({ paymentId: z.uuid() })
 
-export function createApp(env: ServerEnv, overrides: { stripe?: Stripe } = {}): Server {
+/** Every API path. The Vercel build mounts the serverless function at each of these. */
+export const API_ROUTES = [
+  '/api/health',
+  '/api/config',
+  '/api/payments/checkout',
+  '/api/payments/sync',
+  '/api/stripe/webhook',
+  '/api/staff',
+] as const
+
+export type RequestHandler = (req: IncomingMessage, res: ServerResponse) => Promise<void>
+
+/** The API as a plain (req, res) handler — used by the local Node server and the Vercel function. */
+export function createHandler(env: ServerEnv, overrides: { stripe?: Stripe } = {}): RequestHandler {
   const admin = createAdminClient(env)
   const stripe = overrides.stripe ?? (env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY) : undefined)
 
@@ -71,7 +84,7 @@ export function createApp(env: ServerEnv, overrides: { stripe?: Stripe } = {}): 
 
   const allowedOrigin = new URL(env.APP_URL).origin
 
-  async function handle(req: IncomingMessage, res: ServerResponse) {
+  return async function handle(req: IncomingMessage, res: ServerResponse) {
     const url = new URL(req.url ?? '/', 'http://localhost')
     const origin = req.headers.origin
     if (origin === allowedOrigin) {
@@ -102,7 +115,11 @@ export function createApp(env: ServerEnv, overrides: { stripe?: Stripe } = {}): 
       sendJson(res, 500, { error: 'internal_error' })
     }
   }
+}
 
+/** Local/standalone server wrapping the same handler. */
+export function createApp(env: ServerEnv, overrides: { stripe?: Stripe } = {}): Server {
+  const handle = createHandler(env, overrides)
   return createServer((req, res) => {
     void handle(req, res)
   })

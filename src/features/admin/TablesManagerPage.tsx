@@ -4,14 +4,14 @@ import { useEffect, useState } from 'react'
 import { PageHeader, Panel } from '@/components/layout/Page'
 import { Button } from '@/components/ui/Button'
 import { TableNumeral } from '@/components/ui/Display'
-import { EmptyState, ErrorState, PageLoader, Spinner } from '@/components/ui/Feedback'
+import { EmptyState, ErrorState, InlineAlert, PageLoader, Spinner } from '@/components/ui/Feedback'
 import { Field, Input, Switch } from '@/components/ui/Form'
 import { ConfirmDialog, Sheet } from '@/components/ui/Sheet'
 import { useStaffContext } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
-import { download, qrDataUrl, qrSvg, tableUrl } from '@/lib/qr'
+import { download, isDeviceLocalUrl, qrDataUrl, qrSvg, tableUrl } from '@/lib/qr'
 import { archiveTable, listTables, saveTable } from '@/services/operations'
 import type { RestaurantTable } from '@/types/domain'
 
@@ -201,6 +201,7 @@ function QrSheet({ table, slug, restaurantName, onClose }: { table: RestaurantTa
           <p className="text-center text-sm">Scan to order and pay</p>
         </div>
         <p className="mt-3 max-w-full text-center text-[13px] break-all text-ink-3">{url}</p>
+        {isDeviceLocalUrl(url) && <LocalUrlWarning className="mt-3" />}
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           <Button size="sm" variant="secondary" icon={<Download className="size-4" />} disabled={!src} onClick={() => src && download(`${fileBase}.png`, src)}>PNG</Button>
           <Button
@@ -234,6 +235,20 @@ function QrSheet({ table, slug, restaurantName, onClose }: { table: RestaurantTa
 }
 
 /** Print-ready table tents, two per row on A4/Letter. */
+/** Shown when codes point at localhost — phones scanning them would look at themselves. */
+function LocalUrlWarning({ className }: { className?: string }) {
+  return (
+    <InlineAlert tone="warning" className={className}>
+      <p className="font-semibold">Phones can’t open this code</p>
+      <p className="mt-0.5">
+        It points to <span className="font-semibold">localhost</span>, which on a phone means the phone itself. Open this admin page
+        through an address your phone can reach — your tunnel’s https address, or run <code>npm run dev:lan</code> and use the
+        network address it prints — and the codes update automatically.
+      </p>
+    </InlineAlert>
+  )
+}
+
 function PrintSheet({ tables, slug, restaurantName, onClose }: { tables: RestaurantTable[]; slug: string; restaurantName: string; onClose: () => void }) {
   const [codes, setCodes] = useState<Record<string, string>>({})
   useEffect(() => {
@@ -255,6 +270,7 @@ function PrintSheet({ tables, slug, restaurantName, onClose }: { tables: Restaur
         </div>
       }
     >
+      {tables[0] && isDeviceLocalUrl(tableUrl(slug, tables[0].id)) && <LocalUrlWarning className="mb-4" />}
       <div className="print-area grid grid-cols-2 gap-3">
         {tables.map((t) => (
           <div key={t.id} className="print-card flex flex-col items-center rounded-lg border-2 border-dashed border-line-strong bg-white p-5 text-[#2A1E17]">

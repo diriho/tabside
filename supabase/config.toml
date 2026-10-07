@@ -413,3 +413,39 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# ─── Hosted project ───────────────────────────────────────────────────────────
+# Overrides applied when pushing to the hosted project (`supabase config push`). Everything above
+# is tuned for local development/tests; these keep production values where they differ.
+[remotes.production]
+project_id = "ulmpqkuycywhexouxewp"
+
+[remotes.production.auth]
+# Update both to your Vercel domain once deployed (then run `npx supabase config push`).
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/**"]
+# Guests join tables as anonymous users.
+enable_anonymous_sign_ins = true
+
+[remotes.production.auth.rate_limit]
+# Per IP per hour. Guests in one venue often share its Wi-Fi IP, so allow a busy evening's worth.
+anonymous_users = 300
+sign_in_sign_ups = 30
+token_refresh = 150
+
+[remotes.production.auth.email]
+enable_confirmations = true
+max_frequency = "1m0s"
+otp_length = 8
+
+[remotes.production.auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[remotes.production.db.pooler]
+default_pool_size = 15
+max_client_conn = 200
+
+[remotes.production.storage.analytics]
+enabled = true
+max_namespaces = 10

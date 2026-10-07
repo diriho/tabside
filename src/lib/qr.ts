@@ -16,6 +16,11 @@ export function publicOrigin(): string {
   return configured
 }
 
+/** True when a URL only works on this computer (a phone scanning it would look at itself). */
+export function isDeviceLocalUrl(url: string): boolean {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/.test(url)
+}
+
 /** The QR identifies only restaurant + table — no secrets, no session ids. */
 export function tableUrl(slug: string, tableId: string): string {
   return `${publicOrigin()}/r/${slug}/table/${tableId}`

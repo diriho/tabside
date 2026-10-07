@@ -16,9 +16,15 @@ const schema = z.object({
 export type ServerEnv = z.infer<typeof schema>
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
+  // On Vercel, APP_URL defaults to the production domain (or this deployment's URL for previews).
+  const vercelUrl = source.VERCEL_ENV === 'production' && source.VERCEL_PROJECT_PRODUCTION_URL
+    ? source.VERCEL_PROJECT_PRODUCTION_URL
+    : source.VERCEL_URL
   const parsed = schema.safeParse({
     ...source,
+    SUPABASE_URL: source.SUPABASE_URL ?? source.VITE_SUPABASE_URL,
     SUPABASE_PUBLISHABLE_KEY: source.SUPABASE_PUBLISHABLE_KEY ?? source.VITE_SUPABASE_ANON_KEY,
+    APP_URL: source.APP_URL ?? (vercelUrl ? `https://${vercelUrl}` : undefined),
   })
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`).join('\n')

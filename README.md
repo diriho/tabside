@@ -9,163 +9,155 @@ TABSide is QR-code table ordering built around a shared, running tab:
 - **Waitstaff** see which tables need them.
 - **Managers** see the whole restaurant at a glance.
 
-Built with React + Vite + TypeScript, Supabase (Postgres, Auth, Row Level Security, Realtime, Storage), a small Node API for Stripe and staff accounts, and Tailwind CSS.
+Built with React + Vite + TypeScript, hosted **Supabase** (Postgres, Auth, Row Level Security, Realtime, Storage), a small API for Stripe and staff accounts, and Tailwind CSS. It deploys to **Vercel**: the app on the CDN, the API as one serverless function.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the data model, security model, realtime design and payment flow.
 
 ---
 
-## Quick start (local)
+## How it runs
 
-**Requirements:**
-- Node 22.18+ (Node 26 tested)
-- Docker (Docker Desktop or OrbStack)
-- The Stripe CLI, only for online payments
+```
+Browser ──────────────► Supabase (hosted): data, auth, realtime, storage — protected by RLS
+   │
+   └── /api/* ────────► API: Stripe Checkout + webhook, staff accounts (needs secret keys)
+                         local: Node server via the Vite proxy · Vercel: serverless function
+```
+
+There's no local database or container in the app's path: development and production both use your hosted Supabase project.
+
+## Run it locally
+
+**Requirements:** Node 22.18+ (Node 26 tested). The Stripe CLI is only needed for online payments.
 
 ```bash
 npm install
-npm run db:start      # starts local Supabase (first run pulls images, a few minutes)
-npm run db:reset      # applies migrations + loads the demo seed
-cp .env.example .env.local   # then fill in values (see below)
-npm run dev           # web on http://localhost:5173, API on http://localhost:8787
+cp .env.example .env.local    # fill in your Supabase project's URL and keys (see below)
+npm run dev                   # app on http://localhost:5173, API on http://localhost:8787
 ```
 
-`npm run db:start` prints the local keys. Put these in `.env.local`:
-
-| Variable | Where it's used | Local value |
+| Variable | Used by | Value |
 |---|---|---|
-| `VITE_SUPABASE_URL` | browser | `http://127.0.0.1:54321` |
-| `VITE_SUPABASE_ANON_KEY` | browser | the **publishable** key printed by `supabase start` |
-| `SUPABASE_URL` | API | `http://127.0.0.1:54321` |
-| `SUPABASE_SECRET_KEY` | API only | the **secret** key printed by `supabase start` |
-| `APP_URL` | API (Stripe return URLs) | `http://localhost:5173` |
-| `STRIPE_SECRET_KEY` | API only | `sk_test_…` from the Stripe dashboard (optional) |
-| `STRIPE_WEBHOOK_SECRET` | API only | `whsec_…` printed by `npm run stripe:listen` (optional) |
-| `VITE_STRIPE_PUBLISHABLE_KEY` | browser | `pk_test_…` (optional) |
-| `VITE_PUBLIC_APP_URL` | browser (QR codes) | the public origin printed on QR codes |
+| `VITE_SUPABASE_URL` | browser | `https://<project-ref>.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | browser | the project's **publishable** key |
+| `SUPABASE_URL` | API | same URL |
+| `SUPABASE_SECRET_KEY` | API only | the project's **secret** key |
+| `SUPABASE_PUBLISHABLE_KEY` | API | the publishable key |
+| `APP_URL` | API | `http://localhost:5173` locally; on Vercel it defaults to your domain |
+| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | API only | optional, see [Stripe](#stripe-test-mode) |
+| `VITE_PUBLIC_APP_URL` | browser | optional: origin printed in QR codes |
 
-Never put a secret key in a `VITE_` variable. Those are bundled into the browser.
+Never put a secret key in a `VITE_` variable; those are bundled into the browser. All `.env*` files except `.env.example` are git-ignored.
 
-`.env` and `.env.*` are git-ignored, except `.env.example`.
+### One-time setup of the Supabase project
 
-### Demo accounts
+1. **Schema:** `npx supabase link --project-ref <ref>`, then `npx supabase db push` (applies `supabase/migrations`).
+2. **Guests need anonymous sign-ins:** in the dashboard, go to **Authentication → Sign In / Providers** and turn on **Allow anonymous sign-ins**.
+3. **Rate limit for guests:** in **Authentication → Rate Limits**, raise **anonymous sign-ins** to about 300 per hour. Guests in one venue often share its Wi‑Fi address, and the default of 30 runs out on a busy night.
+4. **URLs:** in **Authentication → URL Configuration**, set **Site URL** to your production address and add it to **Redirect URLs**. Keep `http://localhost:5173/**` there for local work.
 
-All demo accounts use the password `tabside-demo`.
+`supabase/config.toml` holds the same production values under `[remotes.production]`. A project admin can apply them with `npx supabase config push`; preview first with `npx supabase config diff`.
 
-| Email | Role |
-|---|---|
-| `manager@theglobe.test` | The Globe: owner / manager |
-| `kitchen@theglobe.test` | The Globe: kitchen |
-| `waiter@theglobe.test` | The Globe: waitstaff |
-| `manager@cafeubuntu.test` | Café Ubuntu: manager (BIF, VAT-inclusive prices) |
-
-In development, the sign-in page has one-tap buttons for these accounts.
-
-## Testing on your phone
+### Load the demo restaurant into your account
 
 ```bash
-npm run dev:lan
+npm run seed:demo
 ```
 
-This makes the app reachable from other devices on your Wi‑Fi, puts your computer's network address into every QR code, and prints a scannable code for The Globe's Table 3 in the terminal. Scan it with your phone's camera.
+It asks for your email. If you have no account yet, it also asks for a password and creates the account, already confirmed. It then adds **The Globe** to your account: menu with sizes and extras, five tables, sales and liquor tax, two weeks of paid order history and reviews. You become its owner-manager. It never overwrites anything; if `/r/the-globe` is taken, use `--slug another-name`.
 
-- Use `VITE_SUPABASE_URL=/supabase` (the default in `.env.local`). The dev server then proxies Supabase, including realtime, so the phone only needs to reach one address.
-- Some networks (campus or office Wi‑Fi) block devices from reaching each other. In that case, open a temporary public URL with `npx cloudflared tunnel --url http://localhost:5173` and use the printed `https://….trycloudflare.com` address on your phone. For printed QR codes to use it, start with `VITE_PUBLIC_APP_URL=<that address> npm run dev:lan`.
-- Only run `dev:lan` while you're testing: it exposes the dev server to your network.
+## Deploy to Vercel
 
-## The demo, step by step
+1. Push the repo to GitHub, then in Vercel choose **Add New → Project** and import it. `vercel.json` sets the build; leave the framework preset as **Other**.
+2. Under **Settings → Environment Variables** (Production and Preview), add:
+   - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+   - `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_PUBLISHABLE_KEY`
+   - optionally `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `VITE_PUBLIC_APP_URL` (for a custom domain)
+3. **Deploy.** Then put the production URL into Supabase's **Site URL** and **Redirect URLs** (step 4 above).
+4. **Stripe (optional):** add a webhook endpoint `https://<your-domain>/api/stripe/webhook` with these events:
+   - `checkout.session.completed`
+   - `checkout.session.async_payment_succeeded`
+   - `checkout.session.async_payment_failed`
+   - `checkout.session.expired`
 
-1. Open the landing page, http://localhost:5173/r/the-globe. It shows the rating, opening hours and featured reviews.
-2. Tap **View menu**.
-3. Open a table's QR URL. Table 3 is http://localhost:5173/r/the-globe/table/a0000000-0000-4000-8000-000000000003. The home page and **Admin → Tables & QR codes** list every table's link and code.
-4. Choose the party size and tap **Join Table 3**.
-5. Add items. The burger asks for a doneness and offers extras; the wine and pizza have sizes.
-6. **Review order** shows the database-calculated tax, then **Place order**.
-7. Open the same table URL in a second browser or a private window.
-8. That browser shows *"You're joining Table 3 — 1 phone is already on this table's tab."* Join.
-9. Place another order from the second browser.
-10. Both browsers' **Orders** tab now shows round 1 (*You*) and round 2 (*Guest 2*) on one tab.
-11. In a third window, sign in as **Kitchen** (`/login`). Tickets appear on `/staff/orders` without refreshing.
-12. On a ticket, tap **Accept**, then **Start preparing**.
-13. Tap **Mark ready**.
-14. The guest's status tracker updates live, and a toast reads *"Your order is ready"*.
-15. As a guest, open **Bill**, choose card or cash, and tap **Ask for the check**. The floor (`/staff/tables`) flags the table *Bill requested*.
-16. Pay, either way:
-    - **Online:** tap **Pay … now** and use Stripe test card `4242 4242 4242 4242`, any future expiry and any CVC. See [Stripe test mode](#stripe-test-mode).
-    - **At the table:** sign in as Waitstaff, open the table, choose **Card** or **Cash**, then **Confirm payment**.
-17. The guest sees **Payment successful** with the total paid.
-18. Tap **Rate your visit** and leave a review.
-19. As the Manager, open **Admin → Reviews** and **Feature** or **Hide** the review. The public page updates; the average rating counts every rating, hidden or not.
+   Copy its signing secret into `STRIPE_WEBHOOK_SECRET` and redeploy.
 
-The manager dashboard (`/admin`) leads with today's revenue, the live floor, and kitchen and bill counts. **Analytics** shows revenue by day, peak hours, average order value and best sellers.
+### What the build produces
+
+`npm run build:vercel` produces Vercel's [Build Output API](https://vercel.com/docs/build-output-api) in `.vercel/output`:
+
+- **Static site:** the app on the CDN, with hashed assets cached forever and a fallback to `index.html` for in-app routes.
+- **API function:** one self-contained `nodejs22.x` function, mounted at every `/api/...` path. Unknown `/api` paths return 404.
+- **Security headers:** a Content-Security-Policy pinned to your Supabase project, HSTS, `nosniff`, `frame-ancestors 'none'`, a referrer policy and a permissions policy.
+
+Every push redeploys, and pull requests get preview URLs.
 
 ## Stripe test mode
 
-1. Copy your test keys from https://dashboard.stripe.com/test/apikeys into `.env.local` (`STRIPE_SECRET_KEY=sk_test_…`, `VITE_STRIPE_PUBLISHABLE_KEY=pk_test_…`).
-2. In another terminal, run `npm run stripe:listen` and paste the printed `whsec_…` into `STRIPE_WEBHOOK_SECRET`.
+1. Put your test keys from https://dashboard.stripe.com/test/apikeys into `.env.local` (`STRIPE_SECRET_KEY=sk_test_…`).
+2. Run `npm run stripe:listen` in another terminal and copy the printed `whsec_…` into `STRIPE_WEBHOOK_SECRET`.
 3. Restart `npm run dev`.
 
 How a payment flows:
 
 1. The guest taps **Pay**.
-2. The API verifies the guest's JWT, asks the database what's due, records a pending payment and creates a Stripe Checkout Session.
-3. The guest pays on Stripe's hosted page.
-4. Stripe sends a signed `checkout.session.completed` webhook. The API verifies the signature and settles the payment idempotently, checking the amount and currency.
-5. The table becomes paid, and realtime updates every phone at the table.
+2. The API checks the guest's login, asks the database what's due, and creates a Stripe Checkout Session.
+3. Stripe sends a signed webhook.
+4. The API verifies the signature and settles the payment idempotently, checking amount and currency.
+5. Every phone at the table updates live.
 
-If the guest gets back from Stripe before the webhook arrives, the bill page asks the API to verify with Stripe directly.
+Without Stripe keys, **Pay online** is hidden and **Ask for the check** still works. Test card: `4242 4242 4242 4242`, any future date, any CVC.
 
-Without Stripe keys, **Pay online** is hidden and **Ask for the check** still works.
+## Try it
 
-## Deploying to your hosted Supabase project
+1. Sign in at `/login` and open **Admin**. With the demo loaded, you'll see the dashboard, menu, tables and reviews.
+2. **Admin → Tables & QR codes:** tap **QR code** on a table and scan it with your phone. On a deployed site that just works. Locally, see [Testing on your phone](#testing-on-your-phone).
+3. On the phone, join the table and order.
+4. Open the same table on a second phone or a private window; both share one tab.
+5. In another window, sign in to **Kitchen** (`/staff/orders`). Tickets appear live.
+6. Accept, prepare and mark ready. The guest's tracker updates live.
+7. The guest opens **Bill**, then either pays online or taps **Ask for the check**. Waitstaff confirm cash or card from **Tables**.
+8. After paying, the guest can rate the visit. Moderate reviews in **Admin → Reviews**.
 
-```bash
-npx supabase link --project-ref <your-project-ref>   # asks for the database password
-npx supabase db push                                  # applies supabase/migrations
-```
+To try the staff views, add kitchen and waitstaff accounts in **Admin → Staff**.
 
-Then, in the Supabase dashboard:
+## Testing on your phone
 
-- **Authentication → Sign In / Providers**: enable **Anonymous sign-ins** (this is how guests get an identity without an account).
-- **Authentication → URL Configuration**: set **Site URL** and redirect URLs to your app's origin.
-
-Seed data (`supabase/seed.sql`) is for local demos only; don't push it to production.
-
-Next, set the environment variables on your hosts:
-
-- **Web app:** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_PUBLIC_APP_URL`.
-- **Node API:** `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `APP_URL`.
-
-Serve the web app and the API under the same origin, with `/api/*` going to the API. Otherwise, set `APP_URL` so the API's CORS allows the web origin.
-
-Finally, add a Stripe webhook endpoint at `https://<your-origin>/api/stripe/webhook` for these `checkout.session.*` events:
-- `completed`
-- `async_payment_succeeded`
-- `async_payment_failed`
-- `expired`
+- **Simplest:** deploy to Vercel and scan the codes from the deployed admin.
+- **Locally:**
+  - **Same Wi‑Fi:** `npm run dev:lan` makes the app reachable at your computer's network address, puts that address into the QR codes, and prints a scannable code. Run it only while testing.
+  - **Networks that block devices from reaching each other:** use a tunnel with `npx cloudflared tunnel --url http://localhost:5173`, then open the admin through the tunnel's `https://` address so the codes use it. Check your network's rules first; campus networks may not allow tunnels.
+- **QR codes that point at `localhost`:** the admin warns you when this happens. They only work on the computer itself.
 
 ## Tests
 
 ```bash
-npm run test:unit   # money, tax engine, currencies, Stripe amounts, opening hours, UI components (jsdom)
-npm run test:db     # against local Supabase: sessions, orders, RLS, payments, reviews, webhooks, TS↔SQL tax parity
-npm run test:e2e    # Playwright: the full acceptance flow in real browsers (needs `npm run dev` or starts it)
-npm test            # unit + ui + db
+npm test             # unit + component tests (no database needed)
 npm run typecheck
+```
+
+The **database and browser tests** create and delete data, so they run only against a disposable **local** Supabase. That local copy needs Docker or OrbStack. They refuse to run against anything that isn't `localhost`, and they never read your `.env.local`:
+
+```bash
+npm run db:start     # start local Supabase for tests; writes .env.test.local
+npm run db:reset     # schema + local demo seed
+npm run test:db      # sessions, orders, RLS, payments, reviews, webhooks, TS↔SQL tax parity
+npm run test:e2e     # the full guest → kitchen → payment → review flow in Chromium (own ports 5174/8788)
+npm run db:stop      # stop the containers when done
 ```
 
 What the suites cover:
 
 - **Shared table sessions:** six phones scanning one table at once still produce one tab.
-- **Pricing on the server:** prices always come from the database, never the client. Variants and modifier rules are validated.
-- **Order lifecycle:** status moves forward only, with role-limited cancellation and voids that re-total the order.
-- **Money:** tax rules (inclusive, exclusive, category- and item-scoped), zero-decimal currencies, and parity between the TypeScript cart preview and the SQL engine over 300 random carts.
-- **Bills and payments:** manual payments, Stripe webhook signature checks, amount-mismatch rejection, idempotency and expiry.
-- **Isolation:** RLS between guests, between restaurants, and between staff roles.
-- **Reviews:** moderation, plus the guarantee that managers can't edit ratings.
+- **Pricing:** prices come from the database, never the client.
+- **Order lifecycle:** status only moves forward, cancellation is limited by role, and voids re-total the order.
+- **Money:** tax rules, zero-decimal currencies, and TypeScript↔SQL tax parity over 300 random carts.
+- **Payments:** Stripe webhook signatures, amount checks, idempotency and expiry.
+- **Isolation:** RLS keeps guests, restaurants and staff roles apart.
+- **Reviews:** managers can moderate but never edit a rating.
 - **Restaurant deletion:** soft delete only.
 
-The optional Stripe Checkout E2E test runs when `STRIPE_SECRET_KEY` is set.
+The Stripe Checkout browser test runs when `STRIPE_SECRET_KEY` is set.
 
 ## Project layout
 
@@ -179,9 +171,10 @@ src/
   services/     typed data access per domain
   types/        generated database types + domain types
 shared/         money, tax engine, Stripe amounts, opening hours (browser + server + tests)
-server/         Node API: Stripe Checkout + webhook, staff accounts
-supabase/       config, migrations, seed
+server/         API: Stripe Checkout + webhook, staff accounts; vercel.ts is the serverless entry
+scripts/        dev runner, Vercel build, demo seed, local test DB
+supabase/       config (incl. production overrides), migrations, local test seed
 tests/          unit/, ui/, db/, e2e/
 ```
 
-Regenerate the database types after changing migrations with `npm run db:types`.
+After changing migrations, regenerate the database types with `npm run db:types` (from the local test DB) and push the migrations with `npx supabase db push`.

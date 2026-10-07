@@ -1,11 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '../../src/types/database.ts'
+import { localTestEnv } from '../local-env.ts'
 
-// Defaults are the public demo keys of the local `supabase start` stack.
-const URL = process.env.SUPABASE_URL as string
-const PUBLISHABLE = process.env.VITE_SUPABASE_ANON_KEY as string
-const SECRET = process.env.SUPABASE_SECRET_KEY as string
+// Local, disposable Supabase only (guarded in localTestEnv).
+const { SUPABASE_URL: URL, SUPABASE_PUBLISHABLE_KEY: PUBLISHABLE, SUPABASE_SECRET_KEY: SECRET } = localTestEnv()
 
 export type Client = SupabaseClient<Database>
 

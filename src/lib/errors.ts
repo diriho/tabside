@@ -45,6 +45,7 @@ const MESSAGES: Record<string, string> = {
   invalid_staff_account: 'That account couldn’t be created. Check the email and password.',
   invalid_request: 'Some details are missing or invalid.',
   network: 'You appear to be offline. Check your connection and try again.',
+  guest_access_disabled: 'Ordering from the table isn’t switched on for this restaurant yet. Ask a member of staff.',
 }
 
 export class AppError extends Error {
@@ -78,6 +79,7 @@ export function toAppError(err: unknown): AppError {
     if (raw === 'item_unavailable' && e.details) message = `${e.details} just sold out. Remove it to continue.`
     return new AppError(raw, message, e.details ?? undefined)
   }
+  if (/anonymous sign-ins are disabled/i.test(raw)) return new AppError('guest_access_disabled')
   if (/JWT|jwt expired|invalid claim/i.test(raw)) return new AppError('not_authenticated')
   if (/permission denied|row-level security/i.test(raw)) return new AppError('forbidden')
   if (/Failed to fetch|NetworkError/i.test(raw)) return new AppError('network')

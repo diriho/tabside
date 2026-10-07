@@ -18,13 +18,16 @@
     "start:api": "node --env-file-if-exists=.env --env-file-if-exists=.env.local server/index.ts",
     "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json",
     "lint": "npm run typecheck",
-    "test": "vitest run",
-    "test:unit": "vitest run --project unit --project ui",
+    "test": "vitest run --project unit --project ui",
     "test:db": "vitest run --project db",
     "test:e2e": "playwright test",
-    "db:start": "supabase start -x edge-runtime,vector,logflare,imgproxy",
+    "db:start": "node scripts/db-start.mjs",
     "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --local 2>/dev/null > src/types/database.ts"
+    "db:types": "supabase gen types typescript --local 2>/dev/null > src/types/database.ts",
+    "build:vercel": "npm run build && node scripts/build-vercel.mjs",
+    "db:stop": "supabase stop",
+    "test:all": "vitest run && playwright test",
+    "seed:demo": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/seed-demo.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
@@ -50,6 +53,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^30.1.1",
+    "rolldown": "^1.2.12",
     "supabase": "^2.119.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",

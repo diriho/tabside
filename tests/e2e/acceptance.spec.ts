@@ -1,12 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 import { devices, expect, test, type Browser, type Page } from '@playwright/test'
+import { localTestEnv } from '../local-env.ts'
 
 // The primary acceptance flow from the brief, end to end in real browsers:
 // two phones share one table tab, the kitchen works the orders live, the table pays,
 // a guest reviews, and the manager features that review.
 
-const SUPABASE_URL = process.env.SUPABASE_URL as string
-const SECRET = process.env.SUPABASE_SECRET_KEY as string
+// Local, disposable Supabase only (guarded in localTestEnv); the dev server is started against it
+// by playwright.config.ts on its own ports.
+const { SUPABASE_URL, SUPABASE_SECRET_KEY: SECRET } = localTestEnv()
 const GLOBE = '11111111-1111-4111-8111-111111111111'
 const admin = createClient(SUPABASE_URL, SECRET, { auth: { persistSession: false } })
 
@@ -198,7 +200,7 @@ test('kitchen reports an item sold out; guests can no longer order it; manager r
 })
 
 test('online payment through Stripe Checkout (test mode)', async ({ browser }) => {
-  const config = await (await fetch('http://localhost:8787/api/config')).json() as { onlinePayments: boolean; webhooks: boolean }
+  const config = await (await fetch(new URL('/api/config', test.info().project.use.baseURL))).json() as { onlinePayments: boolean; webhooks: boolean }
   test.skip(!config.onlinePayments, 'Set STRIPE_SECRET_KEY (sk_test_…) in .env.local to run the Stripe end-to-end test.')
 
   const { data } = await admin.from('restaurant_tables').insert({ restaurant_id: GLOBE, label: `S${Date.now().toString().slice(-4)}`, capacity: 2 }).select('id, label').single()

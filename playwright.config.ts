@@ -1,9 +1,12 @@
 import { defineConfig, devices } from '@playwright/test'
-import { loadEnv } from 'vite'
+import { localTestEnv } from './tests/local-env.ts'
 
-// Playwright doesn't read env files; load .env + .env.local so tests can reach local Supabase.
-// Variables already set in the shell win.
-for (const [key, value] of Object.entries(loadEnv('development', process.cwd(), ''))) process.env[key] ??= value
+// Browser tests run the app against the disposable LOCAL Supabase (never the hosted project), on
+// their own ports so they can't reuse a dev server that points at live data.
+const local = localTestEnv()
+const WEB_PORT = '5174'
+const API_PORT = '8788'
+const baseURL = `http://localhost:${WEB_PORT}`
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -13,15 +16,29 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5173',
+    baseURL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: true,
+    url: baseURL,
+    reuseExistingServer: false,
     timeout: 60_000,
+    // Real environment variables override .env/.env.local in both Vite and the API.
+    env: {
+      WEB_PORT,
+      API_PORT,
+      APP_URL: baseURL,
+      VITE_PUBLIC_APP_URL: baseURL,
+      VITE_SUPABASE_URL: local.SUPABASE_URL,
+      VITE_SUPABASE_ANON_KEY: local.SUPABASE_PUBLISHABLE_KEY,
+      SUPABASE_URL: local.SUPABASE_URL,
+      SUPABASE_SECRET_KEY: local.SUPABASE_SECRET_KEY,
+      SUPABASE_PUBLISHABLE_KEY: local.SUPABASE_PUBLISHABLE_KEY,
+      STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? '',
+      STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+    },
   },
 })

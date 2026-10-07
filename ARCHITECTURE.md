@@ -25,7 +25,8 @@ TABSide is a QR-code table-ordering platform built around a **persistent, shared
 ```
 
 - **The browser talks to Supabase directly** for reads, realtime and RPCs. Every request carries the user's JWT, and RLS plus `SECURITY DEFINER` RPCs enforce what it may do.
-- **The Node API exists only for things that need secrets.** That means Stripe (secret key, webhook signature) and creating staff auth accounts (service-role key). It never trusts IDs from the client. It verifies the caller's JWT and re-checks membership in the database.
+- **The API exists only for things that need secrets.** That means Stripe (secret key, webhook signature) and creating staff auth accounts (service-role key). It never trusts IDs from the client. It verifies the caller's JWT and re-checks membership in the database.
+- **One handler, two runtimes.** `createHandler()` in `server/app.ts` is a plain `(req, res)` handler. Locally it runs inside a Node HTTP server behind the Vite proxy (`server/index.ts`). On Vercel the same handler is bundled into a serverless function (`server/vercel.ts`).
 - **Business rules live in Postgres:** pricing, tax, order transitions and session state. They hold regardless of which client calls.
 
 ## 2. Roles & identity
@@ -178,3 +179,27 @@ server/         Node API (Stripe checkout + webhook, staff admin)
 supabase/       config, migrations/, seed.sql
 tests/          unit (money/tax), db integration (RLS, sessions, orders), ui, e2e
 ```
+
+## 9. Deployment & environments
+
+| Environment | Web app | API | Database |
+|---|---|---|---|
+| Local development | Vite dev server | Node server on `127.0.0.1:8787`, reached via the Vite `/api` proxy | **hosted** Supabase project |
+| Production / previews | Vercel CDN | one Vercel function (`nodejs22.x`), mounted at each `/api/...` path | **hosted** Supabase project |
+| Integration tests | Vite on `:5174` (Playwright) | Node on `:8788` | disposable **local** Supabase (Docker), guarded to `localhost` only |
+
+- **Build:** `npm run build:vercel` typechecks, builds the SPA, and bundles the API with Rolldown into one self-contained ESM file. It then emits `.vercel/output` (Build Output API v3).
+- **Routing** (`config.json`):
+  - immutable caching for `/assets/*`;
+  - security headers on everything;
+  - filesystem, then functions;
+  - 404 for unknown `/api/*`;
+  - SPA fallback to `index.html`.
+- **Function mounting:** the function is symlinked at every path in `API_ROUTES`, so `req.url` is always the real path.
+- **Security headers:**
+  - **CSP:** `script-src 'self'` with no inline scripts (the theme bootstrap is `public/theme-init.js`); `connect-src` limited to the exact Supabase project (https + wss); fonts only from Google Fonts; images from https.
+  - **Others:** HSTS, `nosniff`, `X-Frame-Options: DENY` with `frame-ancestors 'none'`, a strict referrer policy and a permissions policy.
+- **`APP_URL` on Vercel** defaults to `VERCEL_PROJECT_PRODUCTION_URL` (production) or `VERCEL_URL` (previews). Stripe's return URLs and CORS need no extra configuration.
+- **Hosted auth settings** live in `supabase/config.toml` under `[remotes.production]`: anonymous sign-ins on, a guest sign-in limit for shared venue Wi‑Fi, and email confirmation and TOTP kept on. Review them with `supabase config diff`.
+- **Demo data:** `npm run seed:demo` loads The Globe into a chosen owner account on the hosted project, using the service-role key. It computes totals with the shared tax engine, which is verified identical to the SQL engine. `supabase/seed.sql` (with public demo logins) is for the local test database only.
+

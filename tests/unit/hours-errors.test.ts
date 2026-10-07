@@ -30,5 +30,6 @@ describe('error copy', () => {
     expect(toAppError({ message: 'new row violates row-level security policy' }).code).toBe('forbidden')
     expect(toAppError(new TypeError('Failed to fetch')).code).toBe('network')
     expect(toAppError({ error: 'payments_not_configured' }).message).toMatch(/Ask for the check/)
+    expect(toAppError({ message: 'Anonymous sign-ins are disabled' }).code).toBe('guest_access_disabled')
   })
 })
